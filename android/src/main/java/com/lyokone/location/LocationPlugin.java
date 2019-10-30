@@ -402,7 +402,6 @@ public class LocationPlugin implements MethodCallHandler, StreamHandler, PluginR
         return ActivityCompat.shouldShowRequestPermissionRationale(activity, Manifest.permission.ACCESS_FINE_LOCATION);
     }
 
-
     private boolean checkServiceEnabled(final Result result) {
         boolean gps_enabled = false;
         boolean network_enabled = false;
@@ -428,7 +427,7 @@ public class LocationPlugin implements MethodCallHandler, StreamHandler, PluginR
         }
     }
 
-    public void requestService(final Result result) {
+    private void requestService(final Result result) {
         if (this.checkServiceEnabled(null)) {
             result.success(1);
             return;
