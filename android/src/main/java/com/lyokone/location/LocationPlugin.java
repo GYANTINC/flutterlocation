@@ -86,7 +86,6 @@ public class LocationPlugin implements MethodChannel.MethodCallHandler, EventCha
     private Activity activity;
     private MethodChannel methodChannel;
     private EventChannel eventChannel;
-    private FlutterPluginBinding pluginBinding;
 
     private boolean waitingForPermission = false;
     private LocationManager locationManager;
@@ -467,7 +466,7 @@ public class LocationPlugin implements MethodChannel.MethodCallHandler, EventCha
 
     @Override
     public void onAttachedToEngine(@NonNull FlutterPluginBinding binding) {
-        tearUp(pluginBinding.getBinaryMessenger());
+        tearUp(binding.getBinaryMessenger());
     }
 
     @Override
