@@ -137,11 +137,8 @@
     if ([[NSBundle mainBundle] objectForInfoDictionaryKey:@"NSLocationWhenInUseUsageDescription"] != nil) {
         [self.clLocationManager requestWhenInUseAuthorization];
     }
-    else if ([[NSBundle mainBundle] objectForInfoDictionaryKey:@"NSLocationAlwaysUsageDescription"] != nil) {
-        [self.clLocationManager requestAlwaysAuthorization];
-    }
     else {
-        [NSException raise:NSInternalInconsistencyException format:@"To use location in iOS8 and above you need to define either NSLocationWhenInUseUsageDescription or NSLocationAlwaysUsageDescription in the app bundle's Info.plist file"];
+        [NSException raise:NSInternalInconsistencyException format:@"To use location in iOS8 and above you need to define NSLocationWhenInUseUsageDescription in the app bundle's Info.plist file"];
     }
 }
 
@@ -149,7 +146,6 @@
     BOOL isPermissionGranted = NO;
     switch ([CLLocationManager authorizationStatus]) {
         case kCLAuthorizationStatusAuthorizedWhenInUse:
-        case kCLAuthorizationStatusAuthorizedAlways:
             // Location services are available
             isPermissionGranted = YES;
             break;
@@ -226,7 +222,7 @@
         }
         
     }
-    else if (status == kCLAuthorizationStatusAuthorizedWhenInUse || status == kCLAuthorizationStatusAuthorizedAlways) {
+    else if (status == kCLAuthorizationStatusAuthorizedWhenInUse) {
         NSLog(@"User granted permissions");
         if (self.permissionWanted) {
             self.permissionWanted = NO;
