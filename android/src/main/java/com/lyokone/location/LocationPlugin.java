@@ -103,13 +103,7 @@ public class LocationPlugin implements MethodChannel.MethodCallHandler, EventCha
         setupLocationHandlers();
     }
 
-    private void tearUp(BinaryMessenger binaryMessenger) {
-
-
-        mFusedLocationClient = LocationServices.getFusedLocationProviderClient(activity);
-        mSettingsClient = LocationServices.getSettingsClient(activity);
-        locationManager = (LocationManager) activity.getSystemService(Context.LOCATION_SERVICE);
-
+    private void tearUpChannel(BinaryMessenger binaryMessenger) {
         methodChannel = new MethodChannel(binaryMessenger, METHOD_CHANNEL_NAME);
         methodChannel.setMethodCallHandler(this);
 
@@ -118,13 +112,27 @@ public class LocationPlugin implements MethodChannel.MethodCallHandler, EventCha
 
     }
 
-    private void tearDown() {
+    private void tearDownChannel() {
         methodChannel = null;
         eventChannel = null;
+
+
+    }
+
+    private void tearUpActivity(Activity activity, PermissionsRegistry permissionRegistry){
+        this.activity = activity;
+
+        permissionRegistry.addListener(getPermissionsResultListener());
+        mFusedLocationClient = LocationServices.getFusedLocationProviderClient(activity);
+        mSettingsClient = LocationServices.getSettingsClient(activity);
+        locationManager = (LocationManager) activity.getSystemService(Context.LOCATION_SERVICE);
+    }
+
+    private  void tearDownActivity(){
+        this.activity = null;
         mFusedLocationClient = null;
         mSettingsClient = null;
         locationManager = null;
-        activity = null;
     }
 
     @Override
@@ -465,24 +473,23 @@ public class LocationPlugin implements MethodChannel.MethodCallHandler, EventCha
 
     @Override
     public void onAttachedToEngine(@NonNull FlutterPluginBinding binding) {
-        tearUp(binding.getBinaryMessenger());
+        tearUpChannel(binding.getBinaryMessenger());
     }
 
     @Override
     public void onDetachedFromEngine(@NonNull  FlutterPluginBinding binding) {
-        tearDown();
+        tearDownChannel();
     }
 
     @Override
     public void onAttachedToActivity(@NonNull ActivityPluginBinding binding) {
-        this.activity =  binding.getActivity();
-        binding.addRequestPermissionsResultListener(getPermissionsResultListener());
+        this.tearUpActivity(binding.getActivity(), binding::addRequestPermissionsResultListener);
+
     }
 
     @Override
     public void onDetachedFromActivity() {
-        this.activity = null;
-        //tearDown();
+        tearDownActivity();
     }
 
     @Override
