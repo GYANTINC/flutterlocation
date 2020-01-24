@@ -104,17 +104,15 @@ public class LocationPlugin implements MethodChannel.MethodCallHandler, EventCha
         setupLocationHandlers();
     }
 
-    private void tearUp(BinaryMessenger binaryMessenger, PermissionsRegistry permissionRegistry, Activity activity) {
+    private void tearUp(BinaryMessenger binaryMessenger) {
 
-        this.activity = activity;
+
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(activity);
         mSettingsClient = LocationServices.getSettingsClient(activity);
         locationManager = (LocationManager) activity.getSystemService(Context.LOCATION_SERVICE);
 
         methodChannel = new MethodChannel(binaryMessenger, METHOD_CHANNEL_NAME);
         methodChannel.setMethodCallHandler(this);
-
-        permissionRegistry.addListener(getPermissionsResultListener());
 
         eventChannel = new EventChannel(binaryMessenger, STREAM_CHANNEL_NAME);
         eventChannel.setStreamHandler(this);
@@ -469,24 +467,24 @@ public class LocationPlugin implements MethodChannel.MethodCallHandler, EventCha
 
     @Override
     public void onAttachedToEngine(@NonNull FlutterPluginBinding binding) {
-        pluginBinding = binding;
+        tearUp(pluginBinding.getBinaryMessenger());
     }
 
     @Override
     public void onDetachedFromEngine(@NonNull  FlutterPluginBinding binding) {
-        pluginBinding = null;
+        tearDown();
     }
 
     @Override
     public void onAttachedToActivity(@NonNull ActivityPluginBinding binding) {
-        tearUp(pluginBinding.getBinaryMessenger(),
-                binding::addRequestPermissionsResultListener,
-                binding.getActivity());
+        this.activity =  binding.getActivity();
+        binding.addRequestPermissionsResultListener(getPermissionsResultListener());
     }
 
     @Override
     public void onDetachedFromActivity() {
-        tearDown();
+        this.activity = null;
+        //tearDown();
     }
 
     @Override
