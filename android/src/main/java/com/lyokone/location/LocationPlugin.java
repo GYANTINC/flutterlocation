@@ -1,65 +1,56 @@
 package com.lyokone.location;
 
 import android.Manifest;
+import android.annotation.TargetApi;
 import android.app.Activity;
-import android.content.IntentSender;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentSender;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationManager;
 import android.location.OnNmeaMessageListener;
-import android.content.Context;
 import android.os.Build;
 import android.os.Looper;
-import androidx.annotation.NonNull;
-import androidx.core.app.ActivityCompat;
 import android.util.Log;
-import android.annotation.TargetApi;
 import android.util.SparseIntArray;
 
-import com.google.android.gms.common.api.ApiException;
+import androidx.annotation.NonNull;
+import androidx.core.app.ActivityCompat;
 
+import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.common.api.ResolvableApiException;
+import com.google.android.gms.common.api.Result;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
-import com.google.android.gms.location.LocationSettingsRequest;
-import com.google.android.gms.location.LocationSettingsResponse;
-import com.google.android.gms.location.LocationSettingsStatusCodes;
-import com.google.android.gms.location.SettingsClient;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.location.LocationSettingsRequest;
+import com.google.android.gms.location.LocationSettingsStatusCodes;
+import com.google.android.gms.location.SettingsClient;
 
 import java.util.HashMap;
+import java.util.logging.StreamHandler;
 
 import io.flutter.embedding.engine.plugins.FlutterPlugin;
 import io.flutter.embedding.engine.plugins.activity.ActivityAware;
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding;
 import io.flutter.plugin.common.BinaryMessenger;
 import io.flutter.plugin.common.EventChannel;
-import io.flutter.plugin.common.EventChannel.EventSink;
-import io.flutter.plugin.common.EventChannel.StreamHandler;
-import io.flutter.plugin.common.MethodChannel;
-import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
-import io.flutter.plugin.common.MethodChannel.Result;
 import io.flutter.plugin.common.MethodCall;
+import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.PluginRegistry;
-import io.flutter.plugin.common.PluginRegistry.Registrar;
 
 /**
  * LocationPlugin
  */
-public class LocationPlugin implements MethodCallHandler, StreamHandler, PluginRegistry.ActivityResultListener, FlutterPlugin, ActivityAware {
+public class LocationPlugin implements MethodChannel.MethodCallHandler, EventChannel.StreamHandler, FlutterPlugin, ActivityAware {
 
     interface PermissionsRegistry {
         void addListener(PluginRegistry.RequestPermissionsResultListener handler);
     }
 
-    interface ActivityRegistry {
-        void addListener(PluginRegistry.ActivityResultListener handler);
-    }
 
     private static final String STREAM_CHANNEL_NAME = "lyokone/locationstream";
     private static final String METHOD_CHANNEL_NAME = "lyokone/location";
@@ -87,8 +78,8 @@ public class LocationPlugin implements MethodCallHandler, StreamHandler, PluginR
     private static Integer location_accuracy = LocationRequest.PRIORITY_HIGH_ACCURACY;
     private static float distanceFilter = 0f;
 
-    private EventSink events;
-    private Result result;
+    private EventChannel.EventSink events;
+    private MethodChannel.Result result;
 
     private int locationPermissionState;
 
@@ -113,20 +104,7 @@ public class LocationPlugin implements MethodCallHandler, StreamHandler, PluginR
         setupLocationHandlers();
     }
 
-    /**
-     * Plugin registration.
-     */
-    public static void registerWith(Registrar registrar) {
-        if(registrar.activity() != null) {
-            LocationPlugin plugin = new LocationPlugin();
-            plugin.tearUp(registrar.messenger(),
-                    registrar::addRequestPermissionsResultListener,
-                    registrar::addActivityResultListener,
-                    registrar.activity());
-        }
-    }
-
-    private void tearUp(BinaryMessenger binaryMessenger, PermissionsRegistry permissionRegistry, ActivityRegistry activityRegistry, Activity activity) {
+    private void tearUp(BinaryMessenger binaryMessenger, PermissionsRegistry permissionRegistry, Activity activity) {
 
         this.activity = activity;
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(activity);
@@ -137,7 +115,6 @@ public class LocationPlugin implements MethodCallHandler, StreamHandler, PluginR
         methodChannel.setMethodCallHandler(this);
 
         permissionRegistry.addListener(getPermissionsResultListener());
-        activityRegistry.addListener(this);
 
         eventChannel = new EventChannel(binaryMessenger, STREAM_CHANNEL_NAME);
         eventChannel.setStreamHandler(this);
@@ -155,7 +132,7 @@ public class LocationPlugin implements MethodCallHandler, StreamHandler, PluginR
     }
 
     @Override
-    public void onMethodCall(@NonNull MethodCall call, @NonNull final Result result) {
+    public void onMethodCall(MethodCall call, MethodChannel.Result result) {
 
         switch (call.method) {
 
@@ -273,18 +250,6 @@ public class LocationPlugin implements MethodCallHandler, StreamHandler, PluginR
         };
     }
 
-    @Override
-    public boolean onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (requestCode == GPS_ENABLE_REQUEST) {
-            if (resultCode == Activity.RESULT_OK) {
-                this.result.success(1);
-            } else {
-                this.result.success(0);
-            }
-            return true;
-        }
-        return true;
-    }
 
     /**
      * Creates a callback for receiving location events.
@@ -402,7 +367,7 @@ public class LocationPlugin implements MethodCallHandler, StreamHandler, PluginR
         return ActivityCompat.shouldShowRequestPermissionRationale(activity, Manifest.permission.ACCESS_FINE_LOCATION);
     }
 
-    private boolean checkServiceEnabled(final Result result) {
+    private boolean checkServiceEnabled(final MethodChannel.Result result) {
         boolean gps_enabled = false;
         boolean network_enabled = false;
 
@@ -427,7 +392,7 @@ public class LocationPlugin implements MethodCallHandler, StreamHandler, PluginR
         }
     }
 
-    private void requestService(final Result result) {
+    private void requestService(final MethodChannel.Result result) {
         if (this.checkServiceEnabled(null)) {
             result.success(1);
             return;
@@ -483,7 +448,7 @@ public class LocationPlugin implements MethodCallHandler, StreamHandler, PluginR
     }
 
     @Override
-    public void onListen(Object arguments, final EventSink eventsSink) {
+    public void onListen(Object arguments, final EventChannel.EventSink eventsSink) {
         events = eventsSink;
         if (!checkPermissions()) {
             requestPermissions();
@@ -514,9 +479,8 @@ public class LocationPlugin implements MethodCallHandler, StreamHandler, PluginR
 
     @Override
     public void onAttachedToActivity(@NonNull ActivityPluginBinding binding) {
-        tearUp(pluginBinding.getFlutterEngine().getDartExecutor(),
+        tearUp(pluginBinding.getBinaryMessenger(),
                 binding::addRequestPermissionsResultListener,
-                binding::addActivityResultListener,
                 binding.getActivity());
     }
 
