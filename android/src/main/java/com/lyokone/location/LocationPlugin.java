@@ -125,7 +125,6 @@ public class LocationPlugin implements MethodChannel.MethodCallHandler, EventCha
         mSettingsClient = null;
         locationManager = null;
         activity = null;
-        pluginBinding = null;
     }
 
     @Override
