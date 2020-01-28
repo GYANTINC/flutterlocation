@@ -45,12 +45,12 @@ import io.flutter.plugin.common.PluginRegistry;
 /**
  * LocationPlugin
  */
-public class LocationPlugin implements MethodChannel.MethodCallHandler, EventChannel.StreamHandler, FlutterPlugin, ActivityAware {
+public class LocationPlugin
+        implements MethodChannel.MethodCallHandler, EventChannel.StreamHandler, FlutterPlugin, ActivityAware {
 
     interface PermissionsRegistry {
         void addListener(PluginRegistry.RequestPermissionsResultListener handler);
     }
-
 
     private static final String STREAM_CHANNEL_NAME = "lyokone/locationstream";
     private static final String METHOD_CHANNEL_NAME = "lyokone/location";
@@ -116,10 +116,9 @@ public class LocationPlugin implements MethodChannel.MethodCallHandler, EventCha
         methodChannel = null;
         eventChannel = null;
 
-
     }
 
-    private void tearUpActivity(Activity activity, PermissionsRegistry permissionRegistry){
+    private void tearUpActivity(Activity activity, PermissionsRegistry permissionRegistry) {
         this.activity = activity;
 
         permissionRegistry.addListener(getPermissionsResultListener());
@@ -128,7 +127,7 @@ public class LocationPlugin implements MethodChannel.MethodCallHandler, EventCha
         locationManager = (LocationManager) activity.getSystemService(Context.LOCATION_SERVICE);
     }
 
-    private  void tearDownActivity(){
+    private void tearDownActivity() {
         this.activity = null;
         mFusedLocationClient = null;
         mSettingsClient = null;
@@ -136,69 +135,70 @@ public class LocationPlugin implements MethodChannel.MethodCallHandler, EventCha
     }
 
     @Override
-    public void onMethodCall(MethodCall call, MethodChannel.Result result) {
+    public void onMethodCall(@NonNull MethodCall call, @NonNull MethodChannel.Result result) {
 
         switch (call.method) {
 
-            case "changeSettings":
-                try {
-                    location_accuracy = mapFlutterAccuracy.get(call.<Integer>argument("accuracy"));
-                    update_interval_in_milliseconds = call.<Integer>argument("interval").longValue();
-                    fastest_update_interval_in_milliseconds = update_interval_in_milliseconds / 2;
+        case "changeSettings":
+            try {
+                location_accuracy = mapFlutterAccuracy.get(call.<Integer>argument("accuracy"));
+                update_interval_in_milliseconds = call.<Integer>argument("interval").longValue();
+                fastest_update_interval_in_milliseconds = update_interval_in_milliseconds / 2;
 
-                    distanceFilter = call.<Double>argument("distanceFilter").floatValue();
+                distanceFilter = call.<Double>argument("distanceFilter").floatValue();
 
-                    setupLocationHandlers();
+                setupLocationHandlers();
 
-                    result.success(1);
-                } catch(Exception e) {
-                    result.error("CHANGE_SETTINGS_ERROR", "An unexpected error happened during location settings change:" + e.getMessage(), null);
-                }
-                break;
+                result.success(1);
+            } catch (Exception e) {
+                result.error("CHANGE_SETTINGS_ERROR",
+                        "An unexpected error happened during location settings change:" + e.getMessage(), null);
+            }
+            break;
 
-            case "getLocation":
-                this.result = result;
-                if (!checkPermissions()) {
-                    requestPermissions();
-                } else {
-                    startRequestingLocation();
-                }
-                break;
-
-            case "hasPermission":
-                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
-                    result.success(1);
-                    return;
-                }
-
-                if (checkPermissions()) {
-                    result.success(1);
-                } else {
-                    result.success(0);
-                }
-                break;
-
-            case "requestPermission":
-                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
-                    result.success(1);
-                    return;
-                }
-
-                this.waitingForPermission = true;
-                this.result = result;
+        case "getLocation":
+            this.result = result;
+            if (!checkPermissions()) {
                 requestPermissions();
-                break;
+            } else {
+                startRequestingLocation();
+            }
+            break;
 
-            case "serviceEnabled":
-                checkServiceEnabled(result);
-                break;
+        case "hasPermission":
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+                result.success(1);
+                return;
+            }
 
-            case "requestService":
-                requestService(result);
-                break;
+            if (checkPermissions()) {
+                result.success(1);
+            } else {
+                result.success(0);
+            }
+            break;
 
-            default:
-                result.notImplemented();
+        case "requestPermission":
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+                result.success(1);
+                return;
+            }
+
+            this.waitingForPermission = true;
+            this.result = result;
+            requestPermissions();
+            break;
+
+        case "serviceEnabled":
+            checkServiceEnabled(result);
+            break;
+
+        case "requestService":
+            requestService(result);
+            break;
+
+        default:
+            result.notImplemented();
         }
     }
 
@@ -215,7 +215,8 @@ public class LocationPlugin implements MethodChannel.MethodCallHandler, EventCha
 
     private void createPermissionsResultListener() {
         mPermissionsResultListener = (requestCode, permissions, grantResults) -> {
-            if (requestCode == REQUEST_PERMISSIONS_REQUEST_CODE && permissions.length == 1 && permissions[0].equals(Manifest.permission.ACCESS_FINE_LOCATION)) {
+            if (requestCode == REQUEST_PERMISSIONS_REQUEST_CODE && permissions.length == 1
+                    && permissions[0].equals(Manifest.permission.ACCESS_FINE_LOCATION)) {
                 if (waitingForPermission) {
                     waitingForPermission = false;
                     if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
@@ -234,9 +235,11 @@ public class LocationPlugin implements MethodChannel.MethodCallHandler, EventCha
                 } else {
                     if (!shouldShowRequestPermissionRationale()) {
                         if (result != null) {
-                            result.error("PERMISSION_DENIED_NEVER_ASK", "Location permission denied forever- please open app settings", null);
+                            result.error("PERMISSION_DENIED_NEVER_ASK",
+                                    "Location permission denied forever- please open app settings", null);
                         } else if (events != null) {
-                            events.error("PERMISSION_DENIED_NEVER_ASK", "Location permission denied forever - please open app settings", null);
+                            events.error("PERMISSION_DENIED_NEVER_ASK",
+                                    "Location permission denied forever - please open app settings", null);
                             events = null;
                         }
                     } else {
@@ -254,7 +257,6 @@ public class LocationPlugin implements MethodChannel.MethodCallHandler, EventCha
         };
     }
 
-
     /**
      * Creates a callback for receiving location events.
      */
@@ -268,7 +270,7 @@ public class LocationPlugin implements MethodChannel.MethodCallHandler, EventCha
                 loc.put("latitude", location.getLatitude());
                 loc.put("longitude", location.getLongitude());
                 loc.put("accuracy", (double) location.getAccuracy());
-                
+
                 // Using NMEA Data to get MSL level altitude
                 if (mLastMslAltitude == null || Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
                     loc.put("altitude", location.getAltitude());
@@ -295,7 +297,7 @@ public class LocationPlugin implements MethodChannel.MethodCallHandler, EventCha
             }
         };
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) { 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             mMessageListener = (message, timestamp) -> {
                 if (message.startsWith("$")) {
                     String[] tokens = message.split(",");
@@ -315,27 +317,30 @@ public class LocationPlugin implements MethodChannel.MethodCallHandler, EventCha
 
     /**
      * Sets up the location request. Android has two location request settings:
-     * {@code ACCESS_COARSE_LOCATION} and {@code ACCESS_FINE_LOCATION}. These settings control
-     * the accuracy of the current location. This sample uses ACCESS_FINE_LOCATION, as defined in
-     * the AndroidManifest.xml.
+     * {@code ACCESS_COARSE_LOCATION} and {@code ACCESS_FINE_LOCATION}. These
+     * settings control the accuracy of the current location. This sample uses
+     * ACCESS_FINE_LOCATION, as defined in the AndroidManifest.xml.
      * <p/>
-     * When the ACCESS_FINE_LOCATION setting is specified, combined with a fast update
-     * interval (5 seconds), the Fused Location Provider API returns location updates that are
-     * accurate to within a few feet.
+     * When the ACCESS_FINE_LOCATION setting is specified, combined with a fast
+     * update interval (5 seconds), the Fused Location Provider API returns location
+     * updates that are accurate to within a few feet.
      * <p/>
-     * These settings are appropriate for mapping applications that show real-time location
-     * updates.
+     * These settings are appropriate for mapping applications that show real-time
+     * location updates.
      */
     private void createLocationRequest() {
         mLocationRequest = LocationRequest.create();
 
         // Sets the desired interval for active location updates. This interval is
-        // inexact. You may not receive updates at all if no location sources are available, or
-        // you may receive them slower than requested. You may also receive updates faster than
+        // inexact. You may not receive updates at all if no location sources are
+        // available, or
+        // you may receive them slower than requested. You may also receive updates
+        // faster than
         // requested if other applications are requesting location at a faster interval.
         mLocationRequest.setInterval(update_interval_in_milliseconds);
 
-        // Sets the fastest rate for active location updates. This interval is exact, and your
+        // Sets the fastest rate for active location updates. This interval is exact,
+        // and your
         // application will never receive updates faster than this value.
         mLocationRequest.setFastestInterval(fastest_update_interval_in_milliseconds);
 
@@ -344,9 +349,10 @@ public class LocationPlugin implements MethodChannel.MethodCallHandler, EventCha
     }
 
     /**
-     * Uses a {@link com.google.android.gms.location.LocationSettingsRequest.Builder} to build
-     * a {@link com.google.android.gms.location.LocationSettingsRequest} that is used for checking
-     * if a device has the needed location settings.
+     * Uses a
+     * {@link com.google.android.gms.location.LocationSettingsRequest.Builder} to
+     * build a {@link com.google.android.gms.location.LocationSettingsRequest} that
+     * is used for checking if a device has the needed location settings.
      */
     private void buildLocationSettingsRequest() {
         LocationSettingsRequest.Builder builder = new LocationSettingsRequest.Builder();
@@ -358,12 +364,13 @@ public class LocationPlugin implements MethodChannel.MethodCallHandler, EventCha
      * Return the current state of the permissions needed.
      */
     private boolean checkPermissions() {
-        this.locationPermissionState = ActivityCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_FINE_LOCATION);
+        this.locationPermissionState = ActivityCompat.checkSelfPermission(activity,
+                Manifest.permission.ACCESS_FINE_LOCATION);
         return this.locationPermissionState == PackageManager.PERMISSION_GRANTED;
     }
 
     private void requestPermissions() {
-        ActivityCompat.requestPermissions(activity, new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+        ActivityCompat.requestPermissions(activity, new String[] { Manifest.permission.ACCESS_FINE_LOCATION },
                 REQUEST_PERMISSIONS_REQUEST_CODE);
     }
 
@@ -385,13 +392,13 @@ public class LocationPlugin implements MethodChannel.MethodCallHandler, EventCha
         if (gps_enabled || network_enabled) {
             if (result != null) {
                 result.success(1);
-            } 
+            }
             return true;
-            
+
         } else {
             if (result != null) {
                 result.success(0);
-            } 
+            }
             return false;
         }
     }
@@ -402,25 +409,23 @@ public class LocationPlugin implements MethodChannel.MethodCallHandler, EventCha
             return;
         }
         this.result = result;
-        mSettingsClient.checkLocationSettings(mLocationSettingsRequest)
-            .addOnFailureListener(activity, e -> {
-                int statusCode = ((ApiException) e).getStatusCode();
-                switch (statusCode) {
-                case LocationSettingsStatusCodes.RESOLUTION_REQUIRED:
-                    try {
-                        // Show the dialog by calling startResolutionForResult(), and check the
-                        // result in onActivityResult().
-                        ResolvableApiException rae = (ResolvableApiException) e;
-                        rae.startResolutionForResult(activity, GPS_ENABLE_REQUEST);
-                    } catch (IntentSender.SendIntentException sie) {
-                        Log.i(METHOD_CHANNEL_NAME, "PendingIntent unable to execute request.");
-                    }
-                    break;
-                case LocationSettingsStatusCodes.SETTINGS_CHANGE_UNAVAILABLE:
-                    result.error("SERVICE_STATUS_DISABLED",
-                            "Failed to get location. Location services disabled", null);
+        mSettingsClient.checkLocationSettings(mLocationSettingsRequest).addOnFailureListener(activity, e -> {
+            int statusCode = ((ApiException) e).getStatusCode();
+            switch (statusCode) {
+            case LocationSettingsStatusCodes.RESOLUTION_REQUIRED:
+                try {
+                    // Show the dialog by calling startResolutionForResult(), and check the
+                    // result in onActivityResult().
+                    ResolvableApiException rae = (ResolvableApiException) e;
+                    rae.startResolutionForResult(activity, GPS_ENABLE_REQUEST);
+                } catch (IntentSender.SendIntentException sie) {
+                    Log.i(METHOD_CHANNEL_NAME, "PendingIntent unable to execute request.");
                 }
-            });
+                break;
+            case LocationSettingsStatusCodes.SETTINGS_CHANGE_UNAVAILABLE:
+                result.error("SERVICE_STATUS_DISABLED", "Failed to get location. Location services disabled", null);
+            }
+        });
     }
 
     private void startRequestingLocation() {
@@ -461,8 +466,8 @@ public class LocationPlugin implements MethodChannel.MethodCallHandler, EventCha
                         "The user explicitly denied the use of location services for this app or location services are currently disabled in Settings.",
                         null);
             }
-        }     
-        startRequestingLocation();   
+        }
+        startRequestingLocation();
     }
 
     @Override
@@ -477,13 +482,13 @@ public class LocationPlugin implements MethodChannel.MethodCallHandler, EventCha
     }
 
     @Override
-    public void onDetachedFromEngine(@NonNull  FlutterPluginBinding binding) {
+    public void onDetachedFromEngine(@NonNull FlutterPluginBinding binding) {
         tearDownChannel();
     }
 
     @Override
     public void onAttachedToActivity(@NonNull ActivityPluginBinding binding) {
-        this.tearUpActivity(binding.getActivity(), binding::addRequestPermissionsResultListener);
+        tearUpActivity(binding.getActivity(), binding::addRequestPermissionsResultListener);
 
     }
 
@@ -498,9 +503,8 @@ public class LocationPlugin implements MethodChannel.MethodCallHandler, EventCha
     }
 
     @Override
-    public void onReattachedToActivityForConfigChanges(@NonNull  ActivityPluginBinding binding) {
+    public void onReattachedToActivityForConfigChanges(@NonNull ActivityPluginBinding binding) {
         onAttachedToActivity(binding);
     }
-
 
 }
